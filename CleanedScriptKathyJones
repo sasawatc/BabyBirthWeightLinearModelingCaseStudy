@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Feb 28 10:32:10 2019
+Created on Sat Mar  2 11:38:26 2019
 
-@author: khuyent.yu
+@author: Jonas.B,khuyent.yu
 """
 """
 | 1        | mage    | mother's age                    |
@@ -50,39 +50,29 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-
-file = 'data/birthweight.xlsx'
-
+file = 'Desktop/MachineLearning/birthweight.xlsx'
 
 birth = pd.read_excel(file)
-
 
 ########################
 # Fundamental Dataset Exploration
 ########################
-
 # Column names
 birth.columns
-
 
 # Displaying the first rows of the DataFrame
 print(birth.head())
 
-
 # Dimensions of the DataFrame
 birth.shape
-
 
 # Information about each variable
 birth.info()
 
-
 # Descriptive statistics
 birth.describe().round(2)
 
-
 birth.sort_values('bwght', ascending = False)
-
 
 ###############################################################################
 # Imputing Missing Values
@@ -309,14 +299,9 @@ sns.distplot(birth['npvis'],
              kde = False,
              rug = True,
              color = 'r')
-
 plt.xlabel('npvis')
-
-
-
 plt.tight_layout()
 #plt.savefig('birth Data Histograms 1 of 5.png')
-
 plt.show()
 
 
@@ -544,7 +529,7 @@ mage_lo = 18
 meduc_hi = 17
 meduc_lo = 11
 monpre_hi = 5 # recommended start prenatal care 5 months before birth
-npvis_lo = 14 # recommended at least 14 visits for healthy babies
+npvis_hi = 22 # recommended at least 14 visits for healthy babies
 fage_hi = 44
 fage_lo = 5
 feduc_hi = 17
@@ -595,7 +580,7 @@ birth['out_npvis'] = 0
 
 for val in enumerate(birth.loc[ : , 'npvis']):
     
-    if val[1] < npvis_lo:
+    if val[1] < npvis_hi:
         birth.loc[val[0], 'out_npvis'] = 1
         
 # fage
@@ -711,45 +696,30 @@ plt.suptitle("")
 
 plt.show()
 
-
-
 ########################
 # Mwhte
-
-
 birth.boxplot(column = ['bwght'],
                 by = ['mwhte'],
                 vert = True,
                  patch_artist = False,
                  meanline = True,
                  showmeans = True)
-
-
 plt.title("birth weight if mother is white")
 plt.suptitle("")
-
 #plt.savefig("birth weight if mother is white.png")
-
 plt.show()
-
 
 ########################
 # mblck
-
-
 birth.boxplot(column = ['bwght'],
                 by = ['mblck'],
                 vert = False,
                 patch_artist = False,
                 meanline = True,
                 showmeans = True)
-
-
 plt.title("birth weight if mother is black")
 plt.suptitle("")
-
 #plt.savefig("birth weight if mother is black.png")
-
 plt.show()
 
 ########################
@@ -762,13 +732,9 @@ birth.boxplot(column = ['bwght'],
                 patch_artist = False,
                 meanline = True,
                 showmeans = True)
-
-
 plt.title("birth weight if mother is other")
 plt.suptitle("")
-
 #plt.savefig("birth weight if mother is other.png")
-
 plt.show()
 
 ########################
@@ -781,13 +747,9 @@ birth.boxplot(column = ['bwght'],
                 patch_artist = False,
                 meanline = True,
                 showmeans = True)
-
-
 plt.title("birth weight if father is white")
 plt.suptitle("")
-
 #plt.savefig("birth weight if father is white.png")
-
 plt.show()
 
 ########################
@@ -800,13 +762,9 @@ birth.boxplot(column = ['bwght'],
                 patch_artist = False,
                 meanline = True,
                 showmeans = True)
-
-
 plt.title("birth weight if father is black")
 plt.suptitle("")
-
 #plt.savefig("birth weight if father is black.png")
-
 plt.show()
 
 ########################
@@ -819,13 +777,9 @@ birth.boxplot(column = ['bwght'],
                 patch_artist = False,
                 meanline = True,
                 showmeans = True)
-
-
 plt.title("birth weight if father is other")
 plt.suptitle("")
-
 #plt.savefig("birth weight if father is other.png")
-
 plt.show()
 
 ###############################################################################
@@ -842,7 +796,6 @@ print(df_corr)
 
 
 df_corr.loc['bwght'].sort_values(ascending = False)
-# nothing seems strongly correlated at all!
 
 """
 ########################
@@ -868,272 +821,71 @@ sns.heatmap(birth,
 plt.show()
 
 """
-birth.to_excel('Birth_explored.xlsx')
+#birth.to_excel('Birth_explored.xlsx')
 
-clean_file = 'Birth_explored.xlsx'
+#clean_file = 'Birth_explored.xlsx'
 
-birth_df = pd.read_excel(clean_file)
+#birth_df = pd.read_excel(clean_file)
 
 ###############################################################################
 # Univariate Regression Analysis
 ###############################################################################
 import statsmodels.formula.api as smf
 
-# Building a Regression Base (instantiate)
-lm_price_qual = smf.ols(formula = """bwght ~ birth_df['out_cigs']""",
-                         data = birth_df)
-# no variables have high Rsquare
+birth_data   = birth.loc[:,['fmaps','omaps','out_fmaps','out_omaps','npvis','fage',
+                        'male','fwhte','mwhte','feduc','meduc']]
 
-# Fitting Results
-results = lm_price_qual.fit()
+birth_target = birth.loc[:,'bwght']
 
-# Printing Summary Statistics
-print(results.summary())
-
-print(f"""
-Parameters:
-{results.params.round(2)}
-
-Summary Statistics:
-R-Squared:          {results.rsquared.round(3)}
-Adjusted R-Squared: {results.rsquared_adj.round(3)}
-""")
-    
-
-########################
-# Working with Categorical Variables
-########################
-"""
-# One-Hot Encoding Qualitative (Categorical) Variables
-male_dummies = pd.get_dummies(list(birth_df['male']), drop_first = True)
-mwhte_dummies = pd.get_dummies(list(birth_df['mwhte']), drop_first = True)
-mblck_dummies = pd.get_dummies(list(birth_df['mblck']), drop_first = True)
-moth_dummies = pd.get_dummies(list(birth_df['moth']), drop_first = True)
-fwhte_dummies = pd.get_dummies(list(birth_df['fwhte']), drop_first = True)
-fblck_dummies = pd.get_dummies(list(birth_df['fblck']), drop_first = True)
-foth_dummies = pd.get_dummies(list(birth_df['foth']), drop_first = True)
-
-
-# Concatenating One-Hot Encoded Values with the Larger DataFrame
-birth_df_2 = pd.concat(
-        [birth_df.loc[:,:],
-         male_dummies, mwhte_dummies, mblck_dummies, moth_dummies, fwhte_dummies, fblck_dummies, foth_dummies],
-         axis = 1)
-"""
-# don't need to one-hot because variables levels are already split into different columns
-
-# Building a Regression Base (with all variables, but without missing columns)
-lm_all = smf.ols(formula = """bwght ~ birth_df['mage'] +
-                                             birth_df['meduc'] +
-                                             birth_df['monpre'] +
-                                             birth_df['npvis'] +
-                                             birth_df['fage'] +
-                                             birth_df['feduc'] +
-                                             birth_df['fmaps'] +
-                                             birth_df['omaps'] +
-                                             birth_df['cigs'] +
-                                             birth_df['drink'] +
-                                             birth_df['male'] +
-                                             birth_df['mwhte'] +
-                                             birth_df['mblck'] +
-                                             birth_df['moth'] +
-                                             birth_df['fwhte'] +
-                                             birth_df['fblck'] +
-                                             birth_df['foth'] +
-                                             birth_df['out_mage'] +
-                                             birth_df['out_meduc'] +
-                                             birth_df['out_monpre'] +
-                                             birth_df['out_npvis'] +
-                                             birth_df['out_fage'] +
-                                             birth_df['out_feduc'] +
-                                             birth_df['out_omaps'] +
-                                             birth_df['out_fmaps'] +
-                                             birth_df['out_cigs'] +
-                                             birth_df['out_drink'] -1
+lm_significant = smf.ols(formula = """bwght ~ birth['fmaps']+
+                                             birth['omaps'] +
+                                             birth['out_fmaps'] +
+                                             birth['out_omaps'] +
+                                             birth['npvis'] +
+                                             birth['fage'] +
+                                             birth['male'] +
+                                             birth['fwhte'] +
+                                             birth['mwhte'] +
+                                             birth['feduc'] +
+                                             birth['meduc']
+                                             -1
                                              """,
-                         data = birth_df)
-
+                                                  data = birth)
 # Fitting Results
-results = lm_all.fit()
-
+results = lm_significant.fit()
 
 # Printing Summary Statistics
 print(results.summary())
 
-print(f"""
-Summary Statistics:
-R-Squared:          {results.rsquared.round(3)}
-Adjusted R-Squared: {results.rsquared_adj.round(3)}
-""")
 
 
-# Insignificant variables (P>0.05): mage (0.114), meduc (0.996), monpre (0.363), feduc (0.146), omaps (0.191), cigs (0.248), drink(0.322), out_mage (0.573), out_meduc (0.641), m_monpre (0.376), out_fage (0.099), m_feduc(0.289), out_omaps (0.083), out_cigs (0.903), out_drink (0.124)
-
-##################
-# Need to remix data - recreate bad variables into good ones
-##################
-import numpy as np
-    # use outliers as mixers
-    # if -1 (low education outlier) in either meduc or feduc, +1 in low_peduc.
-    # if either mother or father have outlier ages, +1 in out_page.
-    # if +1 in either out_cigs or out_drink, then +1 in drugs.
-    # if +1 in omaps or fmaps, then +1 in help.
-    # mother's race (all 1s)
-    # father's race (all 1s)
-    
-
-# low_peduc = if -1 in out_meduc OR out_feduc
-conditions_educ = [
-        (birth_df['out_meduc'] == -1) | (birth_df['out_feduc'] == -1),
-        (birth_df['out_meduc'] != -1) | (birth_df['out_feduc'] != -1)]
-choices = [1, 0]
-birth_df['low_peduc'] = np.select(conditions_educ, choices, default = 0)
 
 
-# out_page = out_mage (both) OR out_fage (both)
-conditions_age = [
-        (birth_df['out_mage'] != 0) | (birth_df['out_fage'] != 0),
-        (birth_df['out_mage'] == 0) | (birth_df['out_fage'] == 0)]
-choices = [1, 0]
-birth_df['out_page'] = np.select(conditions_age, choices, default = 0)
-        
-        
-# drugs = if +1 in either out_cigs OR out_drink
-conditions_drugs = [
-        (birth_df['out_cigs'] != 0) | (birth_df['out_drink'] != 0),
-        (birth_df['out_cigs'] == 0) | (birth_df['out_drink'] == 0)]
-choices = [1, 0]
-birth_df['drugs'] = np.select(conditions_drugs, choices, default = 0)
 
-
-# help = if +1 in out_omaps OR out_fmaps
-conditions_help = [
-        (birth_df['out_omaps'] != 0) | (birth_df['out_fmaps'] != 0),
-        (birth_df['out_omaps'] == 0) | (birth_df['out_fmaps'] == 0)]
-choices = [1, 0]
-birth_df['help'] = np.select(conditions_help, choices, default = 0)
-
-
-# mrace all mom's races?
-conditions_mrace = [
-        (birth_df['mwhte'] == 1) | (birth_df['mblck'] == 1)  | (birth_df['moth'] == 1),
-        (birth_df['mwhte'] > 1 ) | (birth_df['mblck'] > 1)  | (birth_df['moth'] > 1)]
-choices = [1, 0]
-birth_df['mrace'] = np.select(conditions_mrace, choices, default = 0)
-
-
-# frace all father's races?
-conditions_frace = [
-        (birth_df['fwhte'] == 1) | (birth_df['fblck'] == 1)  | (birth_df['foth'] == 1),
-        (birth_df['fwhte'] > 1 ) | (birth_df['fblck'] > 1)  | (birth_df['foth'] > 1)]
-choices = [1, 0]
-birth_df['frace'] = np.select(conditions_frace, choices, default = 0)
-
-
-# Regression Base with good variables
-lm_mod = smf.ols(formula = """bwght ~ birth_df['mage'] +
-                                             birth_df['meduc'] +
-                                             birth_df['monpre'] +
-                                             birth_df['npvis'] +
-                                             birth_df['fage'] +
-                                             birth_df['feduc'] +
-                                             birth_df['fmaps'] +
-                                             birth_df['omaps'] +
-                                             birth_df['cigs'] +
-                                             birth_df['drink'] +
-                                             birth_df['male'] +
-                                             birth_df['mrace'] +
-                                             birth_df['fwhte'] +
-                                             birth_df['fblck'] +
-                                             birth_df['foth'] +
-                                             birth_df['out_page'] +
-                                             birth_df['out_meduc'] +
-                                             birth_df['out_monpre'] +
-                                             birth_df['out_npvis'] +
-                                             birth_df['out_feduc'] +
-                                             birth_df['out_omaps'] +
-                                             birth_df['out_fmaps'] +
-                                             birth_df['out_cigs'] +
-                                             birth_df['out_drink'] -1
+birth_concat = pd.concat([X_train, y_train], axis = 1)
+# Review of statsmodels.ols
+# Step 1: Build the model
+lm_significant = smf.ols(formula = """bwght ~ birth_concat['fmaps']+
+                                             birth_concat['omaps'] +
+                                             birth_concat['out_fmaps'] +
+                                             birth_concat['out_omaps'] +
+                                             birth_concat['npvis'] +
+                                             birth_concat['fage'] +
+                                             birth_concat['male'] +
+                                             birth_concat['fwhte'] +
+                                             birth_concat['mwhte'] +
+                                             birth_concat['feduc'] +
+                                             birth_concat['meduc']
+                                             -1
                                              """,
-                         data = birth_df)
-
+                                                  data = birth_concat)
 # Fitting Results
-results = lm_mod.fit()
-
+results = lm_significant.fit()
 
 # Printing Summary Statistics
 print(results.summary())
 
-print(f"""
-Summary Statistics:
-R-Squared:          {results.rsquared.round(3)}
-Adjusted R-Squared: {results.rsquared_adj.round(3)}
-""")
- 
-    
-    
-    
-    
-
-"""
-###############################################################################
-# Test OLS model
-###############################################################################
-
-# Checking predicted sale prices v. actual sale prices
-predict = results.predict()
-y_hat   = pd.DataFrame(predict).round(2)  
-resids  = results.resid.round(2)
 
 
 
-# Plotting residuals
-residual_analysis = pd.concat(
-        [birth_df.loc[:,'bwght'],
-         y_hat,
-         results.resid.round(2)],
-         axis = 1)
-#do we have any big residuals? if yes, need to look into data again - make cases for the outliers
 
-residual_analysis.to_excel('bwght Residuals.xlsx')
-
-
-sns.residplot(x = predict,
-              y = birth_df.loc[:,'bwght'])
-
-
-plt.show()
-
-
-
-# We can find more functions available using the dir() command.
-dir(results)
-
-
-
-# Saving as a new dataset for future use.
-birth_df.to_excel('birth_df_clean.xlsx')
-
-
-###############################################################################
-# KNN Modeling
-###############################################################################
-
-# Importing new libraries
-from sklearn.model_selection import train_test_split # train/test split
-from sklearn.neighbors import KNeighborsRegressor # KNN for Regression
-import statsmodels.formula.api as smf # regression modeling
-import sklearn.metrics # more metrics for model performance evaluation
-from sklearn.model_selection import cross_val_score # k-folds cross validation
-
-
-# Importing other libraries
-import pandas as pd
-import matplotlib.pyplot as plt
-
-
-file = 'birth_df_clean.xlsx'
-
-birth_knn = pd.read_excel(file)
-"""
