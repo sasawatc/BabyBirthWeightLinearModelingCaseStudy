@@ -26,7 +26,7 @@ import seaborn as sns
 plt.style.use('ggplot')
 
 file = 'birthweight_feature_set.xlsx'
-data = pd.read_excel('data/'+file)
+data = pd.read_excel('data/' +file)
 
 ##############################################################################
 # checking for missing value
@@ -40,7 +40,7 @@ for col in data:
     a value is missing. """
     
     if data[col].isnull().any():
-        data['m_'+col] = data[col].isnull().astype(int)
+        data['m_' +col] = data[col].isnull().astype(int)
         
 
 """
@@ -71,6 +71,24 @@ for miss_col in missing_list:
 
 print(no_missing.isnull().any().any())
 
+# distinct parents into with or without college degree
+"""
+New columns: fcol: whether father accepted eduction higher than high school
+                   1 for yes, 0 for no
+             mcol: whether father accepted eduction higher than high school
+                   1 for yes, 0 for no
+"""
+no_missing['fcol'] = 0
+for index, value in enumerate(no_missing['feduc']):
+    if value >= 12:
+        no_missing.loc[index, 'fcol'] = 1
+    
+no_missing['mcol'] = 0
+for index, value in enumerate(no_missing['meduc']):
+    if value >= 12:
+        no_missing.loc[index, 'mcol'] = 1
+        
+        
 ##############################################################################
 # checking for outlier
 ##############################################################################
@@ -201,40 +219,37 @@ sns.heatmap(df_corr2,
 
 plt.show()
 
+print(df_corr['bwght'].sort_values())
 
 ###############################################################################
 # OLS regression analysis
 ###############################################################################
 
 # full model
-full_ols = smf.ols(formula = """bwght ~ out_flag['mage'] +
-                                        out_flag['meduc'] +
-                                        out_flag['monpre'] +
-                                        out_flag['npvis'] +
-                                        out_flag['fage'] +
-                                        out_flag['feduc'] +
-                                        out_flag['omaps'] +
-                                        out_flag['fmaps'] +
-                                        out_flag['cigs'] +
-                                        out_flag['drink'] +
-                                        out_flag['male'] +
-                                        out_flag['mwhte'] +
-                                        out_flag['mblck'] +
-                                        out_flag['moth'] +
-                                        out_flag['fwhte'] +
-                                        out_flag['fblck'] +
-                                        out_flag['foth'] +
-                                        out_flag['m_meduc'] +
-                                        out_flag['m_npvis'] +
-                                        out_flag['m_feduc'] +
-                                        out_flag['o_mage'] +
-                                        out_flag['o_monpre'] +
-                                        out_flag['o_npvis'] +
-                                        out_flag['o_fage'] +
-                                        out_flag['o_feduc'] +
-                                        out_flag['o_omaps'] + 
-                                        out_flag['o_fmaps'] +
-                                        out_flag['o_drink'] - 1
+full_ols = smf.ols(formula = """bwght ~   out_flag['mage']  
+                                        + out_flag['meduc']  
+                                        + out_flag['monpre']  
+                                        + out_flag['npvis']  
+                                        + out_flag['fage']  
+                                        + out_flag['feduc']  
+                                        + out_flag['cigs']  
+                                        + out_flag['drink']  
+                                        + out_flag['male']  
+                                        + out_flag['mwhte']  
+                                        + out_flag['mblck']  
+                                        + out_flag['moth']  
+                                        + out_flag['fwhte']  
+                                        + out_flag['fblck']  
+                                        + out_flag['foth']  
+                                        + out_flag['m_meduc']  
+                                        + out_flag['m_npvis']  
+                                        + out_flag['m_feduc']  
+                                        + out_flag['o_mage']  
+                                        + out_flag['o_monpre']  
+                                        + out_flag['o_npvis']  
+                                        + out_flag['o_fage']  
+                                        + out_flag['o_feduc']  
+                                        + out_flag['o_drink']
                                         """,
                                         data = out_flag)
 
@@ -247,16 +262,16 @@ print(result_full.summary())
 
 
 # significant model
-sig_ols = smf.ols(formula = """bwght ~ out_flag['mage'] +
-                                       out_flag['cigs'] +
-                                       out_flag['drink'] +
-                                       out_flag['mwhte'] +
-                                       out_flag['mblck'] +
-                                       out_flag['moth'] +
-                                       out_flag['fwhte'] +
-                                       out_flag['fblck'] +
-                                       out_flag['foth'] +
-                                       out_flag['m_npvis'] -1
+sig_ols = smf.ols(formula = """bwght ~  out_flag['mage']  
+                                       + out_flag['cigs']  
+                                       + out_flag['drink']  
+                                       + out_flag['mwhte']  
+                                       + out_flag['mblck']  
+                                       + out_flag['moth']  
+                                       + out_flag['fwhte']  
+                                       + out_flag['fblck']  
+                                       + out_flag['foth']  
+                                       + out_flag['m_npvis']
                                        """,
                                        data = out_flag)
 
@@ -265,6 +280,62 @@ result_sig = sig_ols.fit()
 
 # Summary Statistics
 print(result_sig.summary())
+
+try_ols = smf.ols(formula = """bwght ~  out_flag['drink']  
+                                      + out_flag['cigs']  
+                                      + out_flag['mage']  
+                                      + out_flag['o_mage']  
+                                      + out_flag['fage']  
+                                      + out_flag['o_fage']  
+                                      + out_flag['o_drink']  
+                                      + out_flag['m_meduc']  
+                                      + out_flag['mwhte']  
+                                      + out_flag['male']  
+                                      + out_flag['fblck']  
+                                      + out_flag['mblck']  
+                                      + out_flag['feduc']  
+                                      + out_flag['o_feduc']
+                                       """,
+                                       data = out_flag)
+
+# Fitting Results
+result_try = try_ols.fit()
+
+# Summary Statistics
+print(result_try.summary())
+
+birth_df = out_flag.copy()
+# mrace all mom's races?
+conditions_mrace = [
+        (birth_df['mwhte'] == 1) | (birth_df['mblck'] == 1)  | (birth_df['moth'] == 1),
+        (birth_df['mwhte'] > 1 ) | (birth_df['mblck'] > 1)  | (birth_df['moth'] > 1)]
+choices = [1, 0]
+birth_df['mrace'] = np.select(conditions_mrace, choices, default = 0)
+
+
+# frace all father's races?
+conditions_frace = [
+        (birth_df['fwhte'] == 1) | (birth_df['fblck'] == 1)  | (birth_df['foth'] == 1),
+        (birth_df['fwhte'] > 1 ) | (birth_df['fblck'] > 1)  | (birth_df['foth'] > 1)]
+choices = [1, 0]
+birth_df['frace'] = np.select(conditions_frace, choices, default = 0)
+
+
+try_ols = smf.ols(formula = """bwght ~  birth_df['drink']  
+                                      + birth_df['cigs']  
+                                      + birth_df['mage']  
+                                      + birth_df['o_mage']  
+                                      + birth_df['fage']  
+                                      + birth_df['o_fage']  
+                                      + birth_df['o_drink']  
+                                      + birth_df['m_meduc']  
+                                      + birth_df['male']  
+                                      + birth_df['feduc']  
+                                      + birth_df['o_feduc']  
+                                      + birth_df['mrace']  
+                                      + birth_df['frace']
+                                       """,
+                                       data = birth_df)
 
 
 ###############################################################################
