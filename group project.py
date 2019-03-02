@@ -80,12 +80,12 @@ New columns: fcol: whether father accepted eduction higher than high school
 """
 no_missing['fcol'] = 0
 for index, value in enumerate(no_missing['feduc']):
-    if value >= 12:
+    if value > 12:
         no_missing.loc[index, 'fcol'] = 1
     
 no_missing['mcol'] = 0
 for index, value in enumerate(no_missing['meduc']):
-    if value >= 12:
+    if value > 12:
         no_missing.loc[index, 'mcol'] = 1
         
         
