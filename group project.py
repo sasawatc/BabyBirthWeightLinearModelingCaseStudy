@@ -1,13 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Feb 27 20:37:39 2019
-
-@author: Kaiyi
-
-Purpose: team project
-
-working dictonary: C:\Users\Administrator\Desktop\Hult\Machine learning\Project
-"""
 
 # Importing new libraries
 from sklearn.model_selection import train_test_split # train/test split
@@ -25,8 +16,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 plt.style.use('ggplot')
 
-file = 'birthweight.xlsx'
-data = pd.read_excel(file)
+file = 'birthweight_feature_set.xlsx'
+data = pd.read_excel('data/'+file)
 
 ##############################################################################
 # checking for missing value
@@ -44,22 +35,23 @@ for col in data:
         
 
 """
-Missing value only in meduc (mother's education), monpre (month prenatal care began),
-npvis (otal number of prenatal visits), fage (father's age), feduc (father's education), 
-omaps (one minute apgar score), fmaps (five minute apgar score), 
-cigs(avg cigarettes per day), drink (avg drinks per week)
+Missing value only in meduc (mother's education), 
+                      npvis (otal number of prenatal visits), 
+                      feduc (father's education)
 """
 
 # check skewness 
 # create a list that store all names for the columns have missing value
-missing_list = ['meduc','monpre', 'npvis', 'fage','feduc','omaps','fmaps',
-                'cigs','drink']
+missing_list = ['meduc', 'npvis','feduc']
 
 for miss_col in missing_list:
     sns.distplot(data[miss_col].dropna())
     plt.show()
 
-# data is skewed. fill missing value with mediam
+"""
+data is skewed. fill missing value with mediam
+"""
+
 # create new data frame without null value: no_missing
 no_missing = data.copy()
 for miss_col in missing_list:
@@ -85,19 +77,22 @@ for col in no_missing:
     plt.show()
 
 # set limit for each column
-mage_limit = 43
-meduc_limit = 6
-monpre_limit = 3
+mage_limit = 64
+monpre_limit = 4
 npvis_limit_high = 15
 npvis_limit_low = 6
-fage_limit = 43
+fage_limit = 55
 feduc_limit = 6
 omaps_limit = 7
+fmaps_limit = 9
+drink_limit = 12
+bwght_limit = 1600
 
-# need more discuss
-fmaps_limit_high = 8
-cigs_limit = 0
-drink_limit = 0
+
+"""
+no outliers: meduc, cigs
+"""
+
 
 # create new data frame for flagging outlier: out_flag
 
@@ -110,13 +105,6 @@ out_flag['o_mage'] = 0
 for index, value in enumerate(out_flag.loc[:, 'mage']):
     if value > mage_limit:
         out_flag.loc[index, 'o_mage'] = 1
-    
-# meduc
-out_flag['o_meduc'] = 0
-
-for index, value in enumerate(out_flag.loc[:, 'meduc']):
-    if value < meduc_limit:
-        out_flag.loc[index, 'o_meduc'] = -1
 
 # monpre
 out_flag['o_monpre'] = 0
@@ -155,8 +143,31 @@ for index, value in enumerate(out_flag.loc[:, 'omaps']):
     if value < omaps_limit:
         out_flag.loc[index, 'o_omaps'] = -1
         
+# fmaps
+out_flag['o_fmaps'] = 0
+
+for index, value in enumerate(out_flag.loc[:, 'fmaps']):
+    if value > fmaps_limit:
+        out_flag.loc[index, 'o_fmaps'] = 1 
+    elif value < fmaps_limit:
+        out_flag.loc[index, 'o_fmaps'] = -1
+        
+# drink
+out_flag['o_drink'] = 0
+
+for index, value in enumerate(out_flag.loc[:, 'drink']):
+    if value > drink_limit:
+        out_flag.loc[index, 'o_drink'] = 1 
+        
+# bwght
+out_flag['o_bwght'] = 0
+
+for index, value in enumerate(out_flag.loc[:, 'bwght']):
+    if value < bwght_limit:
+        out_flag.loc[index, 'o_bwght'] = -1
+        
 # save to excel
-out_flag.to_excel('clean data.xlsx')
+out_flag.to_excel('data/clean data.xlsx')
 
 ###############################################################################
 # Correlation Analysis
@@ -193,9 +204,11 @@ full_ols = smf.ols(formula = """bwght ~ out_flag['mage'] +
                                         out_flag['npvis'] +
                                         out_flag['fage'] +
                                         out_flag['feduc'] +
+                                        out_flag['omaps'] +
                                         out_flag['fmaps'] +
                                         out_flag['cigs'] +
                                         out_flag['drink'] +
+                                        out_flag['male'] +
                                         out_flag['mwhte'] +
                                         out_flag['mblck'] +
                                         out_flag['moth'] +
@@ -203,20 +216,16 @@ full_ols = smf.ols(formula = """bwght ~ out_flag['mage'] +
                                         out_flag['fblck'] +
                                         out_flag['foth'] +
                                         out_flag['m_meduc'] +
-                                        out_flag['m_monpre'] +
                                         out_flag['m_npvis'] +
-                                        out_flag['m_fage'] +
                                         out_flag['m_feduc'] +
-                                        out_flag['m_fmaps'] +
-                                        out_flag['m_cigs'] +
-                                        out_flag['m_drink'] +
                                         out_flag['o_mage'] +
-                                        out_flag['o_meduc'] +
                                         out_flag['o_monpre'] +
                                         out_flag['o_npvis'] +
                                         out_flag['o_fage'] +
                                         out_flag['o_feduc'] +
-                                        out_flag['o_omaps'] - 1
+                                        out_flag['o_omaps'] + 
+                                        out_flag['o_fmaps'] +
+                                        out_flag['o_drink'] - 1
                                         """,
                                         data = out_flag)
 
@@ -229,19 +238,16 @@ print(result_full.summary())
 
 
 # significant model
-sig_ols = smf.ols(formula = """bwght ~ out_flag['npvis'] +
-                                       out_flag['fage'] +
-                                       out_flag['fmaps'] +
+sig_ols = smf.ols(formula = """bwght ~ out_flag['mage'] +
                                        out_flag['cigs'] +
+                                       out_flag['drink'] +
                                        out_flag['mwhte'] +
                                        out_flag['mblck'] +
                                        out_flag['moth'] +
                                        out_flag['fwhte'] +
                                        out_flag['fblck'] +
                                        out_flag['foth'] +
-                                       out_flag['m_fage'] +
-                                       out_flag['m_fmaps'] +
-                                       out_flag['o_omaps']
+                                       out_flag['m_npvis'] -1
                                        """,
                                        data = out_flag)
 
@@ -369,18 +375,23 @@ negative coefficient:
                     o_omaps
 """
 # create new features data frame: linear_x
-linear_x = knn_X.loc[:,['fmaps',
+linear_x = knn_X.loc[:,['meduc',
+                        'feduc',
+                        'cigs',
+                        'drink',
                         'male',
-                        'fwhte',
+                        'mblck',
                         'foth',
                         'm_meduc',
-                        'm_fage',
-                        'm_omaps',
-                        'm_cigs',
+                        'm_npvis',
+                        'm_feduc',     
                         'o_mage',
-                        'o_meduc',     
+                        'o_npvis',
                         'o_fage',
-                        'o_omaps']]
+                        'o_feduc',
+                        'o_omaps',
+                        'o_fmaps',
+                        'o_drink']]
 
 # split data into training and testing data
 X_train_linear, X_test_linear, y_train_linear, y_test_linear = train_test_split(linear_x,
@@ -389,7 +400,7 @@ X_train_linear, X_test_linear, y_train_linear, y_test_linear = train_test_split(
                                                                                 random_state = 78) 
 
 # create regressor
-reg = LinearRegression()
+reg = LinearRegression(fit_intercept=True, normalize = True)
 
 # fit regressor
 reg.fit(X_train_linear,y_train_linear)
