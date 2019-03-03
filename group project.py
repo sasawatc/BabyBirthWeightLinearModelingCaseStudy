@@ -1,13 +1,4 @@
 # -*- coding: utf-8 -*-
-# """
-# Created on Wed Feb 27 20:37:39 2019
-#
-# @author: Kaiyi
-#
-# Purpose: team project
-#
-# working dictonary: C:\Users\Administrator\Desktop\Hult\Machine learning\Project
-# """
 
 # Importing new libraries
 from sklearn.model_selection import train_test_split  # train/test split
