@@ -71,6 +71,15 @@ for col in no_missing:
     plt.title(col)
     plt.show()
 
+outlier_list = ['mage','monpre','npvis','fage','drink', 'cigs']
+for column in outlier_list:
+    sns.scatterplot(data = no_missing,
+                 x = column,
+                 y = 'bwght')
+    plt.title(column)
+    plt.show()
+
+
 # set limit for each column
 mage_limit = 64
 monpre_limit = 4
@@ -106,7 +115,7 @@ for index, value in enumerate(out_flag.loc[:, 'monpre']):
     if value > monpre_limit:
         out_flag.loc[index, 'o_monpre'] = 1
 
-    # npvis
+# npvis
 out_flag['o_npvis'] = 0
 
 for index, value in enumerate(out_flag.loc[:, 'npvis']):
@@ -348,18 +357,7 @@ print(result_full.summary())
 # significant model
 sig_ols = smf.ols(formula="""bwght ~  model_data['mage']  
                                        + model_data['cigs']  
-                                       + model_data['drink']  
-                                       + model_data['mwhte']  
-                                       + model_data['mblck']  
-                                       + model_data['moth']  
-                                       + model_data['fwhte']  
-                                       + model_data['fblck']  
-                                       + model_data['foth']  
-                                       + model_data['fwmw']
-                                       + model_data['fwmo']
-                                       + model_data['fbmb']
-                                       + model_data['fbmo']
-                                       + model_data['fomb']
+                                       + model_data['drink']
                                        + model_data['mix_col']
                                        """,
                   data=model_data)
@@ -387,7 +385,7 @@ knn_y = knn_df.loc[:, 'bwght']
 
 X_train, X_test, y_train, y_test = train_test_split(knn_X,
                                                     knn_y,
-                                                    test_size=0.2,
+                                                    test_size=0.1,
                                                     random_state=508)
 # choose the best neighbor
 
@@ -429,7 +427,10 @@ knn_df2 = knn_df2.drop(['meduc',
                         'fwmb',
                         'fwmo',
                         'fbmo',
-                        'fomb'],
+                        'fomb',
+                        'fwmw',
+                        'fbmb',
+                        'fomo'],
                         axis = 1)
 # prepare features: knn_X and target: knn_y
 
@@ -441,7 +442,7 @@ knn_y2 = knn_df2.loc[:, 'bwght']
 
 X_train2, X_test2, y_train2, y_test2 = train_test_split(knn_X2,
                                                     knn_y2,
-                                                    test_size=0.2,
+                                                    test_size=0.1,
                                                     random_state=508)
 # choose the best neighbor
 
@@ -485,7 +486,7 @@ lasso_coef = lasso.coef_
 
 # plot coefficient
 column_names = knn_X.columns
-fig, ax = plt.subplots(figsize=(12, 12))
+fig, ax = plt.subplots(figsize=(10, 10))
 plt.plot(range(len(column_names)), lasso_coef)
 plt.xticks(range(len(column_names)), column_names.values, rotation=60)
 plt.margins(0.02)
@@ -509,22 +510,19 @@ negative coefficient:
                     o_omaps
 """
 # create new features data frame: linear_x
-linear_x = knn_X.loc[:, ['meduc',
-                         'feduc',
+linear_x = knn_X.loc[:, ['mage',
+                         'meduc',
+                         'monpre',
                          'cigs',
                          'drink',
-                         'male',
-                         'mblck',
-                         'foth',
-                         'm_meduc',
+                         'fwhte',
                          'm_npvis',
                          'm_feduc',
                          'o_mage',
+                         'o_monpre',
                          'o_npvis',
                          'o_fage',
-                         'o_feduc',
-                         'o_omaps',
-                         'o_fmaps',
+                         'mcol',
                          'o_drink']]
 
 # split data into training and testing data
@@ -541,3 +539,51 @@ reg.fit(X_train_linear, y_train_linear)
 
 # check accuracy
 reg.score(X_test_linear, y_test_linear)
+
+###############################################################################
+# Tree analysis (not KNN)
+###############################################################################
+# Importing new libraries
+from sklearn.tree import DecisionTreeRegressor # Regression trees
+from sklearn.tree import export_graphviz # Exports graphics
+from sklearn.externals.six import StringIO # Saves an object in memory
+from IPython.display import Image # Displays an image on the frontend
+import pydotplus # Interprets dot objects
+
+tree_full = DecisionTreeRegressor(random_state = 508)
+tree_full.fit(X_train2, y_train2)
+
+print('Training Score', tree_full.score(X_train2, y_train2).round(4))
+print('Testing Score:', tree_full.score(X_test2, y_test).round(4))
+
+
+# Creating a tree with only two levels.
+tree_2 = DecisionTreeRegressor(max_depth = 3,
+                               random_state = 508)
+
+tree_2_fit = tree_2.fit(X_train2, y_train2)
+
+
+print('Training Score', tree_2.score(X_train2, y_train2).round(4))
+print('Testing Score:', tree_2.score(X_test2, y_test2).round(4))
+
+
+dot_data = StringIO()
+
+
+export_graphviz(decision_tree = tree_2_fit,
+                out_file = dot_data,
+                filled = True,
+                rounded = True,
+                special_characters = True,
+                feature_names = X_train2.columns)
+
+graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
+Image(graph.create_png(),
+      height = 500,
+      width = 800)
+
+
+
+
+
