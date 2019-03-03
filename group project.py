@@ -32,7 +32,7 @@ for col in data:
 
 """
 Missing value only in meduc (mother's education), 
-                      npvis (otal number of prenatal visits), 
+                      npvis (total number of prenatal visits), 
                       feduc (father's education)
 """
 
@@ -71,29 +71,26 @@ for col in no_missing:
     plt.title(col)
     plt.show()
 
-outlier_list = ['mage','monpre','npvis','fage','drink', 'cigs']
-for column in outlier_list:
-    sns.scatterplot(data = no_missing,
-                 x = column,
-                 y = 'bwght')
-    plt.title(column)
+for col in no_missing:
+    sns.distplot(no_missing[col])
     plt.show()
 
+no_missing['feduc'].describe()
 
 # set limit for each column
-mage_limit = 64
-monpre_limit = 4
-npvis_limit_high = 15
+mage_limit = 35
+meduc_limit = 14 # didn't finish college
+monpre_limit = 3 # start checkup in first trimester is safest
+npvis_limit_high = 14
 npvis_limit_low = 6
-fage_limit = 55
-omaps_limit = 7
-fmaps_limit = 9
-drink_limit = 12
-bwght_limit = 1600
+fage_limit_high = 45
+fage_limit_low = 25
+feduc_limit = 14 # didnt finish college
+drink_limit = 2 
+bwght_limit = 2500
 
 """
-no outliers: meduc, cigs
-the education year for both father and mother will be separate into 2 group later
+no outliers: meduc (added line based on research), cigs
 """
 
 # create new data frame for flagging outlier: out_flag
@@ -105,9 +102,16 @@ out_flag = no_missing.copy()
 out_flag['o_mage'] = 0
 
 for index, value in enumerate(out_flag.loc[:, 'mage']):
-    if value > mage_limit:
+    if value >= mage_limit:
         out_flag.loc[index, 'o_mage'] = 1
 
+# meduc
+out_flag['o_meduc'] = 0
+
+for index, value in enumerate(out_flag.loc[:, 'meduc']):
+    if value <= meduc_limit:
+        out_flag.loc[index, 'o_meduc'] = 1
+        
 # monpre
 out_flag['o_monpre'] = 0
 
@@ -115,7 +119,7 @@ for index, value in enumerate(out_flag.loc[:, 'monpre']):
     if value > monpre_limit:
         out_flag.loc[index, 'o_monpre'] = 1
 
-# npvis
+    # npvis
 out_flag['o_npvis'] = 0
 
 for index, value in enumerate(out_flag.loc[:, 'npvis']):
@@ -128,9 +132,15 @@ for index, value in enumerate(out_flag.loc[:, 'npvis']):
 out_flag['o_fage'] = 0
 
 for index, value in enumerate(out_flag.loc[:, 'fage']):
-    if value > fage_limit:
-        out_flag.loc[index, 'o_fage'] = 1
+    if value > fage_limit_high:
+        out_flag.loc[index, 'o_fage'] = 1 
+    elif value < fage_limit_low:
+        out_flag.loc[index, 'o_fage'] = -1
 
+
+for index, value in enumerate(out_flag.loc[:, 'feduc']):
+    if value < feduc_limit:
+        out_flag.loc[index, 'o_feduc'] = -1
 
 # omaps
 out_flag['o_omaps'] = 0
@@ -160,7 +170,7 @@ out_flag['o_bwght'] = 0
 
 for index, value in enumerate(out_flag.loc[:, 'bwght']):
     if value < bwght_limit:
-        out_flag.loc[index, 'o_bwght'] = -1
+        out_flag.loc[index, 'o_bwght'] = 1
 
 ###############################################################################
 # regroup the data
@@ -173,6 +183,7 @@ New columns: fcol: whether father accepted eduction higher than high school
              mcol: whether father accepted eduction higher than high school
                    1 for yes, 0 for no
 """
+
 # copy out_flag to a new data frame: new_column
 new_column = out_flag.copy()
 new_column['fcol'] = 0
@@ -240,31 +251,15 @@ for index in range(len(new_column)):
     else:
         new_column.loc[index, 'checking'] = 1
 
-# drop checking column
-new_column = new_column.drop('checking', axis=1)
-
-# new coulmn: mix_col: if the parent come from different race
-new_column['mix_col'] = 1
-for index in range(len(new_column)):
-    if new_column.loc[index, 'fwmw'] == 1:
-        new_column.loc[index, 'mix_col'] = 0
-    elif new_column.loc[index, 'fbmb'] == 1:
-        new_column.loc[index, 'mix_col'] = 0
-    elif new_column.loc[index, 'fomo'] == 1:
-        new_column.loc[index, 'mix_col'] = 0 
-
-
-
-
 # save to excel
-new_column.to_excel('data/clean data.xlsx')
+out_flag.to_excel('data/clean data.xlsx')
 
 ###############################################################################
 # Correlation Analysis
 ###############################################################################
 
 # caculate correlation
-df_corr = new_column.corr().round(2)
+df_corr = out_flag.corr().round(2)
 
 # plot correlation
 
@@ -282,6 +277,7 @@ sns.heatmap(df_corr2,
 plt.show()
 
 print(df_corr['bwght'].sort_values())
+
 
 ###############################################################################
 # OLS regression analysis
@@ -312,55 +308,55 @@ model_data = model_data.drop(['omaps',
 
 
 # full model
-full_ols = smf.ols(formula="""bwght ~   model_data['mage']  
-                                        + model_data['meduc']  
-                                        + model_data['monpre']  
-                                        + model_data['npvis']  
-                                        + model_data['fage']  
-                                        + model_data['feduc']  
-                                        + model_data['cigs']  
-                                        + model_data['drink']  
-                                        + model_data['male']  
-                                        + model_data['mwhte']  
-                                        + model_data['mblck']  
-                                        + model_data['moth']  
-                                        + model_data['fwhte']  
-                                        + model_data['fblck']  
-                                        + model_data['foth']  
-                                        + model_data['m_meduc']  
-                                        + model_data['m_npvis']  
-                                        + model_data['m_feduc']  
-                                        + model_data['o_mage']  
-                                        + model_data['o_monpre']  
-                                        + model_data['o_npvis']  
-                                        + model_data['o_fage']    
-                                        + model_data['o_drink']
-                                        + model_data['fcol']
-                                        + model_data['mcol']
-                                        + model_data['fwmw']
-                                        + model_data['fwmb']
-                                        + model_data['fwmo']
-                                        + model_data['fbmb']
-                                        + model_data['fbmo']
-                                        + model_data['fomb']
-                                        + model_data['fomo']
-                                        + model_data['mix_col']
+full_ols = smf.ols(formula="""bwght ~   new_column['mage']  
+                                        + new_column['meduc']  
+                                        + new_column['monpre']  
+                                        + new_column['npvis']  
+                                        + new_column['fage']  
+                                        + new_column['feduc']  
+                                        + new_column['cigs']  
+                                        + new_column['drink']  
+                                        + new_column['male']  
+                                        + new_column['mwhte']  
+                                        + new_column['mblck']  
+                                        + new_column['moth']  
+                                        + new_column['fwhte']  
+                                        + new_column['fblck']  
+                                        + new_column['foth']  
+                                        + new_column['m_meduc']  
+                                        + new_column['m_npvis']  
+                                        + new_column['m_feduc']  
+                                        + new_column['o_mage']  
+                                        + new_column['o_monpre']  
+                                        + new_column['o_npvis']  
+                                        + new_column['o_fage']  
+                                        + new_column['o_feduc']  
+                                        + new_column['o_drink']
                                         """,
-                   data=model_data)
+                   data=new_column)
 
 # Fitting Results
 result_full = full_ols.fit()
 
 # Summary Statistics
 print(result_full.summary())
+print(f"""
+Parameters:
+{result_full.params.round(2)}
 
 # significant model
-sig_ols = smf.ols(formula="""bwght ~  model_data['mage']  
-                                       + model_data['cigs']  
-                                       + model_data['drink']
-                                       + model_data['mix_col']
+sig_ols = smf.ols(formula="""bwght ~  new_column['mage']  
+                                       + new_column['cigs']  
+                                       + new_column['drink']  
+                                       + new_column['mwhte']  
+                                       + new_column['mblck']  
+                                       + new_column['moth']  
+                                       + new_column['fwhte']  
+                                       + new_column['fblck']  
+                                       + new_column['foth']  
+                                       + new_column['m_npvis']
                                        """,
-                  data=model_data)
+                  data=new_column)
 
 # Fitting Results
 result_sig = sig_ols.fit()
@@ -368,12 +364,51 @@ result_sig = sig_ols.fit()
 # Summary Statistics
 print(result_sig.summary())
 
+try_ols = smf.ols(formula="""bwght ~  new_column['drink']  
+                                      + new_column['cigs']  
+                                      + new_column['mage']  
+                                      + new_column['o_mage']  
+                                      + new_column['fage']  
+                                      + new_column['o_fage']  
+                                      + new_column['o_drink']  
+                                      + new_column['m_meduc']  
+                                      + new_column['mwhte']  
+                                      + new_column['male']  
+                                      + new_column['fblck']  
+                                      + new_column['mblck']  
+                                      + new_column['feduc']  
+                                      + new_column['o_feduc']
+                                       """,
+                  data=new_column)
+
+# Fitting Results
+result_try = try_ols.fit()
+
+# Summary Statistics
+print(result_try.summary())
+
+try_ols = smf.ols(formula="""bwght ~  birth_df['drink']  
+                                      + birth_df['cigs']  
+                                      + birth_df['mage']  
+                                      + birth_df['o_mage']  
+                                      + birth_df['fage']  
+                                      + birth_df['o_fage']  
+                                      + birth_df['o_drink']  
+                                      + birth_df['m_meduc']  
+                                      + birth_df['male']  
+                                      + birth_df['feduc']  
+                                      + birth_df['o_feduc']  
+                                      + birth_df['mrace']  
+                                      + birth_df['frace']
+                                       """,
+                  data=birth_df)
+
 ###############################################################################
 # KNN regression analysis
 ###############################################################################
 # create new dataframe for knn analysis      
 
-knn_df = model_data.copy()
+knn_df = out_flag.copy()
 
 # prepare features: knn_X and target: knn_y
 
@@ -390,49 +425,34 @@ X_train, X_test, y_train, y_test = train_test_split(knn_X,
 # choose the best neighbor
 
 neighbors = np.arange(1, 30)
-train_accuracy_reg = np.empty(len(neighbors))
-test_accuracy_reg = np.empty(len(neighbors))
+train_accuracy = np.empty(len(neighbors))
+test_accuracy = np.empty(len(neighbors))
 
 for i, k in enumerate(neighbors):
     """ loop though neighbors to find the accuracy rate for each neighbors for 
     both train and test data """
 
-    knn = KNeighborsRegressor(n_neighbors=k)
+    knn = KNeighborsClassifier(n_neighbors=k)
     knn.fit(X_train, y_train)
+
+    train_accuracy[i] = knn.score(X_train, y_train)
+    test_accuracy[i] = knn.score(X_test, y_test)
 
     train_accuracy_reg[i] = knn.score(X_train, y_train)
     test_accuracy_reg[i] = knn.score(X_test, y_test)
 
 # plot the accuracy
-plt.title('k-NN Regression: varuing Number of Neighbors')
-plt.plot(neighbors, test_accuracy_reg, label='Test Accuracy')
-plt.plot(neighbors, train_accuracy_reg, label='Train Accuracy')
+plt.title('k-NN: varuing Number of Neighbors')
+plt.plot(neighbors, test_accuracy, label='Test Accuracy')
+plt.plot(neighbors, train_accuracy, label='Train Accuracy')
 plt.xlabel('Number of Neighbors')
 plt.ylabel('Accuracy')
 plt.legend()
 plt.show()
 
-# try to modify 
-knn_df2 = model_data.copy()
-
-# drop the columns with duplicate information
-knn_df2 = knn_df2.drop(['meduc',
-                        'feduc',
-                        'mwhte',
-                        'mblck',
-                        'moth',
-                        'fwhte',
-                        'fblck',
-                        'foth',
-                        'fwmb',
-                        'fwmo',
-                        'fbmo',
-                        'fomb',
-                        'fwmw',
-                        'fbmb',
-                        'fomo'],
-                        axis = 1)
-# prepare features: knn_X and target: knn_y
+###############################################################################
+# KNN regression analysis
+###############################################################################
 
 knn_X2 = knn_df2.drop('bwght', axis=1)
 
@@ -453,6 +473,12 @@ test_accuracy_reg = np.empty(len(neighbors))
 for i, k in enumerate(neighbors):
     """ loop though neighbors to find the accuracy rate for each neighbors for 
     both train and test data """
+
+    knn = KNeighborsRegressor(n_neighbors=k)
+    knn.fit(X_train, y_train)
+
+    train_accuracy_reg[i] = knn.score(X_train, y_train)
+    test_accuracy_reg[i] = knn.score(X_test, y_test)
 
     knn = KNeighborsRegressor(n_neighbors=k)
     knn.fit(X_train2, y_train2)
@@ -510,19 +536,22 @@ negative coefficient:
                     o_omaps
 """
 # create new features data frame: linear_x
-linear_x = knn_X.loc[:, ['mage',
-                         'meduc',
-                         'monpre',
+linear_x = knn_X.loc[:, ['meduc',
+                         'feduc',
                          'cigs',
                          'drink',
-                         'fwhte',
+                         'male',
+                         'mblck',
+                         'foth',
+                         'm_meduc',
                          'm_npvis',
                          'm_feduc',
                          'o_mage',
-                         'o_monpre',
                          'o_npvis',
                          'o_fage',
-                         'mcol',
+                         'o_feduc',
+                         'o_omaps',
+                         'o_fmaps',
                          'o_drink']]
 
 # split data into training and testing data
