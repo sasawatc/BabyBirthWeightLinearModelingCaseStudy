@@ -169,17 +169,6 @@ New columns: fcol: whether father accepted eduction higher than high school
                    1 for yes, 0 for no
 """
 
-# copy out_flag to a new data frame: new_column
-new_column = out_flag.copy()
-new_column['fcol'] = 0
-for index, value in enumerate(new_column['feduc']):
-    if value > 12:
-        new_column.loc[index, 'fcol'] = 1
-
-new_column['mcol'] = 0
-for index, value in enumerate(new_column['meduc']):
-    if value > 12:
-        new_column.loc[index, 'mcol'] = 1
 
 # race of the parent 
 """
@@ -203,16 +192,16 @@ New columns: fwmw: both father and mother are white
                  1 for yes, 0 for no
              checking: check for all data is assigned to one of the columns above                                       
 """
-new_column['fwmw'] = 0
-new_column['fwmb'] = 0
-new_column['fwmo'] = 0
-new_column['fbmw'] = 0
-new_column['fbmb'] = 0
-new_column['fbmo'] = 0
-new_column['fomw'] = 0
-new_column['fomb'] = 0
-new_column['fomo'] = 0
-new_column['checking'] = 0  # check for any missing, will be dropped later
+out_flag['fwmw'] = 0
+out_flag['fwmb'] = 0
+out_flag['fwmo'] = 0
+out_flag['fbmw'] = 0
+out_flag['fbmb'] = 0
+out_flag['fbmo'] = 0
+out_flag['fomw'] = 0
+out_flag['fomb'] = 0
+out_flag['fomo'] = 0
+out_flag['checking'] = 0  # check for any missing, will be dropped later
 
 for index in range(len(out_flag)):
     if out_flag.loc[index, 'fwhte'] == 1 and out_flag.loc[index, 'mwhte'] == 1:
@@ -299,32 +288,32 @@ model_data = model_data.drop(['omaps',
 
 
 # full model
-full_ols = smf.ols(formula="""bwght ~   new_column['mage']  
-                                        + new_column['meduc']  
-                                        + new_column['monpre']  
-                                        + new_column['npvis']  
-                                        + new_column['fage']  
-                                        + new_column['feduc']  
-                                        + new_column['cigs']  
-                                        + new_column['drink']  
-                                        + new_column['male']  
-                                        + new_column['mwhte']  
-                                        + new_column['mblck']  
-                                        + new_column['moth']  
-                                        + new_column['fwhte']  
-                                        + new_column['fblck']  
-                                        + new_column['foth']  
-                                        + new_column['m_meduc']  
-                                        + new_column['m_npvis']  
-                                        + new_column['m_feduc']  
-                                        + new_column['o_mage']  
-                                        + new_column['o_monpre']  
-                                        + new_column['o_npvis']  
-                                        + new_column['o_fage']  
-                                        + new_column['o_feduc']  
-                                        + new_column['o_drink']
+full_ols = smf.ols(formula="""bwght ~   out_flag['mage']  
+                                        + out_flag['meduc']  
+                                        + out_flag['monpre']  
+                                        + out_flag['npvis']  
+                                        + out_flag['fage']  
+                                        + out_flag['feduc']  
+                                        + out_flag['cigs']  
+                                        + out_flag['drink']  
+                                        + out_flag['male']  
+                                        + out_flag['mwhte']  
+                                        + out_flag['mblck']  
+                                        + out_flag['moth']  
+                                        + out_flag['fwhte']  
+                                        + out_flag['fblck']  
+                                        + out_flag['foth']  
+                                        + out_flag['m_meduc']  
+                                        + out_flag['m_npvis']  
+                                        + out_flag['m_feduc']  
+                                        + out_flag['o_mage']  
+                                        + out_flag['o_monpre']  
+                                        + out_flag['o_npvis']  
+                                        + out_flag['o_fage']  
+                                        + out_flag['o_feduc']  
+                                        + out_flag['o_drink']
                                         """,
-                   data=new_column)
+                   data=out_flag)
 
 # Fitting Results
 result_full = full_ols.fit()
@@ -394,24 +383,8 @@ X_train, X_test, y_train, y_test = train_test_split(
             random_state = 508)
 
 
-try_ols = smf.ols(formula="""bwght ~  birth_df['drink']  
-                                      + birth_df['cigs']  
-                                      + birth_df['mage']  
-                                      + birth_df['o_mage']  
-                                      + birth_df['fage']  
-                                      + birth_df['o_fage']  
-                                      + birth_df['o_drink']  
-                                      + birth_df['m_meduc']  
-                                      + birth_df['male']  
-                                      + birth_df['feduc']  
-                                      + birth_df['o_feduc']  
-                                      + birth_df['mrace']  
-                                      + birth_df['frace']
-                                       """,
-                  data=birth_df)
-
 # Prepping the Model
-lr = LinearRegression(fit_intercept = False)
+lr = LinearRegression(fit_intercept = True, normalize = True)
 # fit_intercept = false - don't want it cuz then we'll be able to get R square of 0.975
 
 # Fitting the model
