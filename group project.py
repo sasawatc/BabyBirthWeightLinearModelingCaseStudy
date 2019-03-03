@@ -120,7 +120,7 @@ for index, value in enumerate(out_flag.loc[:, 'monpre']):
     if value > monpre_limit:
         out_flag.loc[index, 'o_monpre'] = 1
 
-    # npvis
+# npvis
 out_flag['o_npvis'] = 0
 
 for index, value in enumerate(out_flag.loc[:, 'npvis']):
@@ -138,26 +138,10 @@ for index, value in enumerate(out_flag.loc[:, 'fage']):
     elif value < fage_limit_low:
         out_flag.loc[index, 'o_fage'] = -1
 
-
+# feduc
 for index, value in enumerate(out_flag.loc[:, 'feduc']):
     if value < feduc_limit:
         out_flag.loc[index, 'o_feduc'] = -1
-
-# omaps
-out_flag['o_omaps'] = 0
-
-for index, value in enumerate(out_flag.loc[:, 'omaps']):
-    if value < omaps_limit:
-        out_flag.loc[index, 'o_omaps'] = -1
-
-# fmaps
-out_flag['o_fmaps'] = 0
-
-for index, value in enumerate(out_flag.loc[:, 'fmaps']):
-    if value > fmaps_limit:
-        out_flag.loc[index, 'o_fmaps'] = 1
-    elif value < fmaps_limit:
-        out_flag.loc[index, 'o_fmaps'] = -1
 
 # drink
 out_flag['o_drink'] = 0
@@ -350,7 +334,8 @@ print(result_full.summary())
 print(f"""
 Parameters:
 {result_full.params.round(2)}
-
+""")
+    
 # significant model
 sig_ols = smf.ols(formula = """bwght ~   out_flag['mage']  
                                         + out_flag['meduc']
