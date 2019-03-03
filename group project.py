@@ -70,24 +70,7 @@ for miss_col in missing_list:
 # check if any missing value left
 
 print(no_missing.isnull().any().any())
-
-# distinct parents into with or without college degree
-"""
-New columns: fcol: whether father accepted eduction higher than high school
-                   1 for yes, 0 for no
-             mcol: whether father accepted eduction higher than high school
-                   1 for yes, 0 for no
-"""
-no_missing['fcol'] = 0
-for index, value in enumerate(no_missing['feduc']):
-    if value > 12:
-        no_missing.loc[index, 'fcol'] = 1
-    
-no_missing['mcol'] = 0
-for index, value in enumerate(no_missing['meduc']):
-    if value > 12:
-        no_missing.loc[index, 'mcol'] = 1
-        
+   
         
 ##############################################################################
 # checking for outlier
@@ -192,16 +175,95 @@ out_flag['o_bwght'] = 0
 for index, value in enumerate(out_flag.loc[:, 'bwght']):
     if value < bwght_limit:
         out_flag.loc[index, 'o_bwght'] = -1
+
+###############################################################################
+# regroup the data
+###############################################################################
+        
+# distinct parents into with or without college degree
+"""
+New columns: fcol: whether father accepted eduction higher than high school
+                   1 for yes, 0 for no
+             mcol: whether father accepted eduction higher than high school
+                   1 for yes, 0 for no
+"""
+# copy out_flag to a new data frame: new_column
+new_column = out_flag.copy()
+new_column['fcol'] = 0
+for index, value in enumerate(new_column['feduc']):
+    if value > 12:
+        new_column.loc[index, 'fcol'] = 1
+    
+new_column['mcol'] = 0
+for index, value in enumerate(new_column['meduc']):
+    if value > 12:
+        new_column.loc[index, 'mcol'] = 1
+        
+# race of the parent 
+"""
+New columns: fwmw: both father and mother are white
+                 1 for yes, 0 for no
+             fwmb:  father is  white and mother is black
+                 1 for yes, 0 for no
+             fwmo: father is  white and mother is other
+                 1 for yes, 0 for no
+             fbmw: father is black and mother is white
+                 1 for yes, 0 for no
+             fbmb: both father and mother are black
+                 1 for yes, 0 for no
+             fbmo: father is black and mother is other
+                 1 for yes, 0 for no 
+             fomw: father is other and mother is white
+                 1 for yes, 0 for no    
+             fomb: father is other and mother is black
+                 1 for yes, 0 for no     
+             fomo: both father and mother are other
+                 1 for yes, 0 for no
+             checking: check for all data is assigned to one of the columns above                                       
+"""
+new_column['fwmw'] = 0
+new_column['fwmb'] = 0
+new_column['fwmo'] = 0
+new_column['fbmw'] = 0
+new_column['fbmb'] = 0
+new_column['fbmo'] = 0
+new_column['fomw'] = 0
+new_column['fomb'] = 0
+new_column['fomo'] = 0
+new_column['checking'] = 0 # check for any missing, will be dropped later
+
+for index in range(len(new_column)):
+    if new_column.loc[index, 'fwhte'] == 1 and new_column.loc[index, 'mwhte'] == 1:
+        new_column.loc[index, 'fwmw'] = 1
+    elif new_column.loc[index, 'fwhte'] == 1 and new_column.loc[index, 'mblck'] == 1:
+        new_column.loc[index, 'fwmb'] = 1
+    elif new_column.loc[index, 'fwhte'] == 1 and new_column.loc[index, 'moth'] == 1:
+        new_column.loc[index, 'fwmo'] = 1
+    elif new_column.loc[index, 'fblck'] == 1 and new_column.loc[index, 'mwhte'] == 1:
+        new_column.loc[index, 'fbmw'] = 1
+    elif new_column.loc[index, 'fblck'] == 1 and new_column.loc[index, 'mblck'] == 1:
+        new_column.loc[index, 'fbmb'] = 1
+    elif new_column.loc[index, 'fblck'] == 1 and new_column.loc[index, 'moth'] == 1:
+        new_column.loc[index, 'fbmo'] = 1
+    elif new_column.loc[index, 'foth'] == 1 and new_column.loc[index, 'mwhte'] == 1:
+        new_column.loc[index, 'fomw'] = 1
+    elif new_column.loc[index, 'foth'] == 1 and new_column.loc[index, 'mblck'] == 1:
+        new_column.loc[index, 'fomb'] = 1
+    elif new_column.loc[index, 'foth'] == 1 and new_column.loc[index, 'moth'] == 1:
+        new_column.loc[index, 'fomo'] = 1 
+    else: 
+        new_column.loc[index, 'checking'] = 1
+        
         
 # save to excel
-out_flag.to_excel('data/clean data.xlsx')
+new_column.to_excel('data/clean data.xlsx')
 
 ###############################################################################
 # Correlation Analysis
 ###############################################################################
         
 # caculate correlation
-df_corr = out_flag.corr().round(2)
+df_corr = new_column.corr().round(2)
 
 # plot correlation
 sns.palplot(sns.color_palette('coolwarm', 12))
@@ -219,6 +281,7 @@ sns.heatmap(df_corr2,
 
 plt.show()
 
+
 print(df_corr['bwght'].sort_values())
 
 ###############################################################################
@@ -226,32 +289,32 @@ print(df_corr['bwght'].sort_values())
 ###############################################################################
 
 # full model
-full_ols = smf.ols(formula = """bwght ~   out_flag['mage']  
-                                        + out_flag['meduc']  
-                                        + out_flag['monpre']  
-                                        + out_flag['npvis']  
-                                        + out_flag['fage']  
-                                        + out_flag['feduc']  
-                                        + out_flag['cigs']  
-                                        + out_flag['drink']  
-                                        + out_flag['male']  
-                                        + out_flag['mwhte']  
-                                        + out_flag['mblck']  
-                                        + out_flag['moth']  
-                                        + out_flag['fwhte']  
-                                        + out_flag['fblck']  
-                                        + out_flag['foth']  
-                                        + out_flag['m_meduc']  
-                                        + out_flag['m_npvis']  
-                                        + out_flag['m_feduc']  
-                                        + out_flag['o_mage']  
-                                        + out_flag['o_monpre']  
-                                        + out_flag['o_npvis']  
-                                        + out_flag['o_fage']  
-                                        + out_flag['o_feduc']  
-                                        + out_flag['o_drink']
+full_ols = smf.ols(formula = """bwght ~   new_column['mage']  
+                                        + new_column['meduc']  
+                                        + new_column['monpre']  
+                                        + new_column['npvis']  
+                                        + new_column['fage']  
+                                        + new_column['feduc']  
+                                        + new_column['cigs']  
+                                        + new_column['drink']  
+                                        + new_column['male']  
+                                        + new_column['mwhte']  
+                                        + new_column['mblck']  
+                                        + new_column['moth']  
+                                        + new_column['fwhte']  
+                                        + new_column['fblck']  
+                                        + new_column['foth']  
+                                        + new_column['m_meduc']  
+                                        + new_column['m_npvis']  
+                                        + new_column['m_feduc']  
+                                        + new_column['o_mage']  
+                                        + new_column['o_monpre']  
+                                        + new_column['o_npvis']  
+                                        + new_column['o_fage']  
+                                        + new_column['o_feduc']  
+                                        + new_column['o_drink']
                                         """,
-                                        data = out_flag)
+                                        data = new_column)
 
 
 # Fitting Results
@@ -262,18 +325,18 @@ print(result_full.summary())
 
 
 # significant model
-sig_ols = smf.ols(formula = """bwght ~  out_flag['mage']  
-                                       + out_flag['cigs']  
-                                       + out_flag['drink']  
-                                       + out_flag['mwhte']  
-                                       + out_flag['mblck']  
-                                       + out_flag['moth']  
-                                       + out_flag['fwhte']  
-                                       + out_flag['fblck']  
-                                       + out_flag['foth']  
-                                       + out_flag['m_npvis']
+sig_ols = smf.ols(formula = """bwght ~  new_column['mage']  
+                                       + new_column['cigs']  
+                                       + new_column['drink']  
+                                       + new_column['mwhte']  
+                                       + new_column['mblck']  
+                                       + new_column['moth']  
+                                       + new_column['fwhte']  
+                                       + new_column['fblck']  
+                                       + new_column['foth']  
+                                       + new_column['m_npvis']
                                        """,
-                                       data = out_flag)
+                                       data = new_column)
 
 # Fitting Results
 result_sig = sig_ols.fit()
@@ -281,44 +344,28 @@ result_sig = sig_ols.fit()
 # Summary Statistics
 print(result_sig.summary())
 
-try_ols = smf.ols(formula = """bwght ~  out_flag['drink']  
-                                      + out_flag['cigs']  
-                                      + out_flag['mage']  
-                                      + out_flag['o_mage']  
-                                      + out_flag['fage']  
-                                      + out_flag['o_fage']  
-                                      + out_flag['o_drink']  
-                                      + out_flag['m_meduc']  
-                                      + out_flag['mwhte']  
-                                      + out_flag['male']  
-                                      + out_flag['fblck']  
-                                      + out_flag['mblck']  
-                                      + out_flag['feduc']  
-                                      + out_flag['o_feduc']
+try_ols = smf.ols(formula = """bwght ~  new_column['drink']  
+                                      + new_column['cigs']  
+                                      + new_column['mage']  
+                                      + new_column['o_mage']  
+                                      + new_column['fage']  
+                                      + new_column['o_fage']  
+                                      + new_column['o_drink']  
+                                      + new_column['m_meduc']  
+                                      + new_column['mwhte']  
+                                      + new_column['male']  
+                                      + new_column['fblck']  
+                                      + new_column['mblck']  
+                                      + new_column['feduc']  
+                                      + new_column['o_feduc']
                                        """,
-                                       data = out_flag)
+                                       data = new_column)
 
 # Fitting Results
 result_try = try_ols.fit()
 
 # Summary Statistics
 print(result_try.summary())
-
-birth_df = out_flag.copy()
-# mrace all mom's races?
-conditions_mrace = [
-        (birth_df['mwhte'] == 1) | (birth_df['mblck'] == 1)  | (birth_df['moth'] == 1),
-        (birth_df['mwhte'] > 1 ) | (birth_df['mblck'] > 1)  | (birth_df['moth'] > 1)]
-choices = [1, 0]
-birth_df['mrace'] = np.select(conditions_mrace, choices, default = 0)
-
-
-# frace all father's races?
-conditions_frace = [
-        (birth_df['fwhte'] == 1) | (birth_df['fblck'] == 1)  | (birth_df['foth'] == 1),
-        (birth_df['fwhte'] > 1 ) | (birth_df['fblck'] > 1)  | (birth_df['foth'] > 1)]
-choices = [1, 0]
-birth_df['frace'] = np.select(conditions_frace, choices, default = 0)
 
 
 try_ols = smf.ols(formula = """bwght ~  birth_df['drink']  
@@ -344,7 +391,7 @@ try_ols = smf.ols(formula = """bwght ~  birth_df['drink']
 
 # create new dataframe for knn analysis      
 
-knn_df = out_flag.copy()
+knn_df = new_column.copy()
 
 # prepare features: knn_X and target: knn_y
 
