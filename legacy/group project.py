@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Importing new libraries
 from sklearn.model_selection import train_test_split  # train/test split
 from sklearn.neighbors import KNeighborsRegressor  # KNN for Regression
